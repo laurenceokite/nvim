@@ -5,13 +5,8 @@ return { -- LSP Configuration & Plugins
 		"williamboman/mason.nvim",
 		"williamboman/mason-lspconfig.nvim",
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
-
-		-- Useful status updates for LSP.
-		-- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
+		"folke/neoconf.nvim",
 		{ "j-hui/fidget.nvim", opts = {} },
-
-		-- `neodev` configures Lua LSP for your Neovim config, runtime and plugins
-		-- used for completion, annotations and signatures of Neovim apis
 		{ "folke/neodev.nvim", opts = {} },
 	},
 	config = function()
@@ -67,29 +62,21 @@ return { -- LSP Configuration & Plugins
 			end,
 		})
 
-		-- LSP servers and clients are able to communicate to each other what features they support.
-		--  By default, Neovim doesn't support everything that is in the LSP specification.
-		--  When you add nvim-cmp, luasnip, etc. Neovim now has *more* capabilities.
-		--  So, we create new capabilities with nvim cmp, and then broadcast that to the servers.
 		local capabilities = vim.lsp.protocol.make_client_capabilities()
 		capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
-		--  Add any additional override configuration in the following tables. Available keys are:
-		--  - cmd (table): Override the default command used to start the server
-		--  - filetypes (table): Override the default list of associated filetypes for the server
-		--  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
-		--  - settings (table): Override the default settings passed when initializing the server.
-		--        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
 		local servers = {
 			clangd = {},
-			csharp_ls = {},
+			omnisharp = {
+				filetypes = { "csharp" },
+				root_dir = { "*.csproj", "*.sln" },
+			},
+			ruby_lsp = {},
+			sorbet = {},
 			gopls = {},
-			pyright = {},
 			rust_analyzer = {},
 			cssls = {},
 			sqlls = {},
-			vuels = {},
-			volar = {},
 			svelte = {},
 			html = {},
 			dockerls = {},
@@ -98,7 +85,23 @@ return { -- LSP Configuration & Plugins
 			tailwindcss = {},
 			jsonls = {},
 			-- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
-			ts_ls = {},
+			ts_ls = {
+				init_options = {
+					plugins = {
+						{
+							name = "@vue/typescript-plugin",
+							location = vim.fn.stdpath("data")
+								.. "/mason/packages/vue-language-server/node_modules/@vue/language-server/node_modules/@vue/typescript-plugin",
+							languages = { "typescript", "javascript", "vue" },
+						},
+					},
+				},
+				filetypes = {
+					"javascript",
+					"typescript",
+					"vue",
+				},
+			},
 			lua_ls = {
 				-- cmd = {...},
 				-- filetypes = { ...},
@@ -112,8 +115,22 @@ return { -- LSP Configuration & Plugins
 					},
 				},
 			},
+			svelte = {
+				capabilities = svelte_lsp_capabilities,
+				filetypes = { "svelte" },
+				settings = {
+					svelte = {
+						plugin = {
+							svelte = {
+								defaultScriptLanguage = "ts",
+							},
+						},
+					},
+				},
+			},
 		}
 
+		require("neoconf").setup()
 		require("mason").setup()
 
 		local ensure_installed = vim.tbl_keys(servers or {})
@@ -126,6 +143,7 @@ return { -- LSP Configuration & Plugins
 			handlers = {
 				function(server_name)
 					local server = servers[server_name] or {}
+
 					server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
 					require("lspconfig")[server_name].setup(server)
 				end,

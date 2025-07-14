@@ -12,7 +12,28 @@ return {
 			end,
 		},
 		{ "nvim-telescope/telescope-ui-select.nvim" },
-		{ "nvim-tree/nvim-web-devicons", enabled = vim.g.have_nerd_font },
+		{
+			"stevearc/oil.nvim",
+			opts = {
+				keymaps = {
+					["gd"] = {
+						desc = "Toggle file detail view",
+						callback = function()
+							detail = not detail
+							if detail then
+								require("oil").set_columns({ "icon", "permissions", "size", "mtime" })
+								require("oil").toggle_hidden()
+							else
+								require("oil").set_columns({ "icon" })
+							end
+						end,
+					},
+				},
+			},
+			dependencies = { { "echasnovski/mini.icons", opts = {} } },
+			-- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
+			lazy = false,
+		},
 	},
 	config = function()
 		-- See `:help telescope` and `:help telescope.setup()`
@@ -53,7 +74,7 @@ return {
 		vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
 		vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
 		vim.keymap.set("n", "<leader><leader>", builtin.buffers, { desc = "[ ] Find existing buffers" })
-		vim.keymap.set("n", "<space>fb", ":Telescope file_browser<CR>", { desc = "[F]ile [B]rowser" })
+		vim.keymap.set("n", "-", "<CMD>Oil<CR>", { desc = "Open parent directory" })
 
 		-- Slightly advanced example of overriding default behavior and theme
 		vim.keymap.set("n", "<leader>/", function()
